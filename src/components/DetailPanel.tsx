@@ -3,9 +3,10 @@ import { Citation, VerificationResult } from '../types';
 interface DetailPanelProps {
   citation: Citation | null;
   result: VerificationResult | null;
+  onClose: () => void;
 }
 
-export function DetailPanel({ citation, result }: DetailPanelProps) {
+export function DetailPanel({ citation, result, onClose }: DetailPanelProps) {
   if (!citation || !result) {
     return (
       <div>
@@ -16,6 +17,7 @@ export function DetailPanel({ citation, result }: DetailPanelProps) {
 
   return (
     <div>
+      <button onClick={onClose}>Close</button>
       <h2>Citation Details</h2>
 
       <div>
