@@ -12,6 +12,9 @@ interface SelectedCitation {
 function App() {
   const [selectedCitation, setSelectedCitation] = useState<SelectedCitation | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const announcementRef = useRef<HTMLDivElement>(null);
 
   // Get all citations with verification results in order
   const getCitableCitations = (): Array<{ citation: Citation; result: VerificationResult }> => {
@@ -29,6 +32,11 @@ function App() {
 
   const handleClosePanel = useCallback(() => {
     setSelectedCitation(null);
+    // Return focus to the main content area when panel closes
+    const firstCitation = containerRef.current?.querySelector('button[aria-pressed]');
+    if (firstCitation instanceof HTMLElement) {
+      firstCitation.focus();
+    }
   }, []);
 
   const navigateToCitation = useCallback((direction: 'next' | 'prev') => {
@@ -38,7 +46,19 @@ function App() {
     setSelectedCitation((current) => {
       if (!current) {
         // If nothing is selected, select the first citation
-        return citableCitations[0];
+        const first = citableCitations[0];
+        // Announce to screen readers
+        if (announcementRef.current) {
+          announcementRef.current.textContent = `Selected citation: ${first.citation.caseName}. Press Enter to view details.`;
+        }
+        // Focus the citation button
+        setTimeout(() => {
+          const button = containerRef.current?.querySelector(`button[aria-label*="${first.citation.caseName}"]`);
+          if (button instanceof HTMLElement) {
+            button.focus();
+          }
+        }, 0);
+        return first;
       }
 
       const currentIndex = citableCitations.findIndex(
@@ -46,7 +66,17 @@ function App() {
       );
 
       if (currentIndex === -1) {
-        return citableCitations[0];
+        const first = citableCitations[0];
+        if (announcementRef.current) {
+          announcementRef.current.textContent = `Selected citation: ${first.citation.caseName}. Press Enter to view details.`;
+        }
+        setTimeout(() => {
+          const button = containerRef.current?.querySelector(`button[aria-label*="${first.citation.caseName}"]`);
+          if (button instanceof HTMLElement) {
+            button.focus();
+          }
+        }, 0);
+        return first;
       }
 
       let newIndex: number;
@@ -56,9 +86,31 @@ function App() {
         newIndex = currentIndex === 0 ? citableCitations.length - 1 : currentIndex - 1;
       }
 
-      return citableCitations[newIndex];
+      const newCitation = citableCitations[newIndex];
+      // Announce to screen readers
+      if (announcementRef.current) {
+        announcementRef.current.textContent = `Selected citation ${newIndex + 1} of ${citableCitations.length}: ${newCitation.citation.caseName}. Press Enter to view details.`;
+      }
+      // Focus the citation button
+      setTimeout(() => {
+        const button = containerRef.current?.querySelector(`button[aria-label*="${newCitation.citation.caseName}"]`);
+        if (button instanceof HTMLElement) {
+          button.focus();
+        }
+      }, 0);
+      return newCitation;
     });
   }, []);
+
+  // Focus management: Move focus to close button when panel opens
+  useEffect(() => {
+    if (selectedCitation && closeButtonRef.current) {
+      // Small delay to ensure panel is rendered
+      setTimeout(() => {
+        closeButtonRef.current?.focus();
+      }, 100);
+    }
+  }, [selectedCitation]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -101,23 +153,61 @@ function App() {
   }, [navigateToCitation, handleClosePanel]);
 
   return (
-    <div ref={containerRef} className="flex w-full h-screen bg-gray-100" tabIndex={0}>
-      <div className="flex-1 bg-white overflow-y-auto p-8">
-        <BriefViewer
-          brief={sampleBrief}
-          onCitationClick={handleCitationClick}
-          selectedCitationId={selectedCitation?.citation.id || null}
-        />
+    <div className="flex w-full h-screen bg-gray-100">
+      {/* Skip to main content link */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      >
+        Skip to main content
+      </a>
+
+      {/* Keyboard shortcuts help - accessible via keyboard */}
+      <div className="sr-only" id="keyboard-shortcuts">
+        <h2>Keyboard Shortcuts</h2>
+        <ul>
+          <li>Arrow Right, Arrow Down, or J: Navigate to next citation</li>
+          <li>Arrow Left, Arrow Up, or K: Navigate to previous citation</li>
+          <li>Enter or Space: Open citation details (when citation is focused)</li>
+          <li>Escape: Close citation details panel</li>
+        </ul>
       </div>
-      {selectedCitation && (
-        <div className="w-96 bg-gray-50 border-l border-gray-200">
-          <DetailPanel 
-            selectedCitation={selectedCitation.citation} 
-            selectedResult={selectedCitation.result}
-            onClose={handleClosePanel}
+
+      {/* ARIA live region for citation navigation announcements */}
+      <div
+        ref={announcementRef}
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        id="citation-announcements"
+        role="status"
+      />
+
+      <main
+        ref={containerRef}
+        id="main-content"
+        className="flex w-full h-screen bg-gray-100"
+        role="main"
+        aria-label="Legal brief viewer"
+      >
+        <article className="flex-1 bg-white overflow-y-auto p-8" aria-label="Brief content">
+          <BriefViewer
+            brief={sampleBrief}
+            onCitationClick={handleCitationClick}
+            selectedCitationId={selectedCitation?.citation.id || null}
           />
-        </div>
-      )}
+        </article>
+        {selectedCitation && (
+          <div ref={panelRef} className="w-96 bg-gray-50 border-l border-gray-200">
+            <DetailPanel 
+              selectedCitation={selectedCitation.citation} 
+              selectedResult={selectedCitation.result}
+              onClose={handleClosePanel}
+              closeButtonRef={closeButtonRef}
+            />
+          </div>
+        )}
+      </main>
     </div>
   );
 }

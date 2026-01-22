@@ -5,6 +5,7 @@ interface DetailPanelProps {
   selectedCitation: Citation | null;
   selectedResult: VerificationResult | null;
   onClose: () => void;
+  closeButtonRef?: React.RefObject<HTMLButtonElement>;
 }
 
 interface DetailSectionProps {
@@ -14,13 +15,14 @@ interface DetailSectionProps {
 }
 
 function DetailSection({ title, children, isBold = false }: DetailSectionProps) {
+  const sectionId = `section-${title.toLowerCase().replace(/\s+/g, '-')}`;
   return (
-    <div>
-      <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">{title}</h4>
+    <section aria-labelledby={sectionId}>
+      <h4 id={sectionId} className="text-sm font-serif font-bold text-gray-900 mb-3">{title}</h4>
       <p className={`text-sm text-gray-800 leading-relaxed font-sans ${isBold ? 'font-semibold' : ''}`}>
         {children}
       </p>
-    </div>
+    </section>
   );
 }
 
@@ -30,13 +32,17 @@ interface QuoteBlockProps {
 }
 
 function QuoteBlock({ title, quote }: QuoteBlockProps) {
+  const quoteId = `quote-${title.toLowerCase().replace(/\s+/g, '-')}`;
   return (
-    <div>
-      <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">{title}</h4>
-      <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic text-gray-700 font-sans text-sm leading-relaxed">
+    <section aria-labelledby={quoteId}>
+      <h4 id={quoteId} className="text-sm font-serif font-bold text-gray-900 mb-3">{title}</h4>
+      <blockquote 
+        className="border-l-4 border-gray-300 pl-4 my-2 italic text-gray-700 font-sans text-sm leading-relaxed"
+        cite=""
+      >
         {quote}
       </blockquote>
-    </div>
+    </section>
   );
 }
 
@@ -51,25 +57,33 @@ function formatReporter(citation: Citation): string {
   return formatted;
 }
 
-export function DetailPanel({ selectedCitation, selectedResult, onClose }: DetailPanelProps) {
+export function DetailPanel({ selectedCitation, selectedResult, onClose, closeButtonRef }: DetailPanelProps) {
   const hasSelection = selectedCitation && selectedResult;
 
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <aside
+      className="h-full flex flex-col bg-gray-50"
+      role="complementary"
+      aria-label="Citation details panel"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-        <h3 className="text-base font-serif font-bold text-gray-900">Citation Details</h3>
+      <header className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <h2 id="panel-title" className="text-base font-serif font-bold text-gray-900">Citation Details</h2>
         <button
+          ref={closeButtonRef}
           onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded transition-colors"
-          aria-label="Close panel"
+          className="p-1 hover:bg-gray-100 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+          aria-label="Close citation details panel"
+          type="button"
         >
-          <X className="w-4 h-4 text-gray-500" />
+          <X className="w-4 h-4 text-gray-500" aria-hidden="true" />
         </button>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6" role="region" aria-labelledby="panel-title">
         {hasSelection ? (
           <div className="bg-white rounded-lg p-6 space-y-6">
             <DetailSection title="Citation">{selectedCitation.text}</DetailSection>
@@ -103,6 +117,6 @@ export function DetailPanel({ selectedCitation, selectedResult, onClose }: Detai
           </div>
         )}
       </div>
-    </div>
+    </aside>
   );
 }
