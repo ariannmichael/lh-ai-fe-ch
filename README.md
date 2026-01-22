@@ -22,12 +22,57 @@ The app works. It's just... rough.
 
 ## Getting Started
 
+### Prerequisites
+
+- **Node.js** version 18.x or higher
+- **npm** (comes with Node.js) or **yarn**
+
+### Setup Instructions
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd lh-ai-fe-ch
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser**
+   - Navigate to [http://localhost:5173](http://localhost:5173)
+   - The app will automatically reload when you make changes
+
+### Available Scripts
+
+- `npm run dev` - Start the development server with hot module replacement
+- `npm run build` - Build the project for production (outputs to `dist/`)
+- `npm run preview` - Preview the production build locally
+- `npm run lint` - Run ESLint to check code quality
+
+### Development Notes
+
+- The app uses **Vite** for fast development and building
+- **Tailwind CSS** is configured for styling (see `tailwind.config.js`)
+- **TypeScript** is set to strict mode for type safety
+- The project includes:
+  - `react-markdown` for rendering markdown content
+  - `lucide-react` for icon components
+  - Custom citation processing and metadata handling
+
+### Building for Production
+
 ```bash
-npm install
-npm run dev
+npm run build
 ```
 
-Open [http://localhost:5173](http://localhost:5173) to see the current state.
+The production build will be output to the `dist/` directory, ready for deployment to any static hosting service.
 
 ## Tech Stack
 
