@@ -7,7 +7,53 @@ interface DetailPanelProps {
   onClose: () => void;
 }
 
+interface DetailSectionProps {
+  title: string;
+  children: React.ReactNode;
+  isBold?: boolean;
+}
+
+function DetailSection({ title, children, isBold = false }: DetailSectionProps) {
+  return (
+    <div>
+      <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">{title}</h4>
+      <p className={`text-sm text-gray-800 leading-relaxed font-sans ${isBold ? 'font-semibold' : ''}`}>
+        {children}
+      </p>
+    </div>
+  );
+}
+
+interface QuoteBlockProps {
+  title: string;
+  quote: string;
+}
+
+function QuoteBlock({ title, quote }: QuoteBlockProps) {
+  return (
+    <div>
+      <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">{title}</h4>
+      <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic text-gray-700 font-sans text-sm leading-relaxed">
+        {quote}
+      </blockquote>
+    </div>
+  );
+}
+
+function formatReporter(citation: Citation): string {
+  let formatted = citation.reporter;
+  if (citation.pinCite) {
+    formatted += `, ${citation.pinCite}`;
+  }
+  if (citation.year) {
+    formatted += ` (${citation.year})`;
+  }
+  return formatted;
+}
+
 export function DetailPanel({ selectedCitation, selectedResult, onClose }: DetailPanelProps) {
+  const hasSelection = selectedCitation && selectedResult;
+
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
@@ -24,83 +70,36 @@ export function DetailPanel({ selectedCitation, selectedResult, onClose }: Detai
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
-        {selectedCitation && selectedResult ? (
+        {hasSelection ? (
           <div className="bg-white rounded-lg p-6 space-y-6">
-            {/* Citation */}
-            <div>
-              <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Citation</h4>
-              <p className="text-sm text-gray-800 leading-relaxed font-sans">
-                {selectedCitation.text}
-              </p>
-            </div>
-
-            {/* Case Name */}
-            <div>
-              <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Case Name</h4>
-              <p className="text-sm text-gray-800 leading-relaxed font-sans">
-                {selectedCitation.caseName}
-              </p>
-            </div>
-
-            {/* Reporter */}
-            <div>
-              <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Reporter</h4>
-              <p className="text-sm text-gray-800 leading-relaxed font-sans">
-                {selectedCitation.reporter}
-                {selectedCitation.pinCite && `, ${selectedCitation.pinCite}`}
-                {selectedCitation.year && ` (${selectedCitation.year})`}
-              </p>
-            </div>
-
-            {/* Status */}
-            <div>
-              <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Status</h4>
-              <p className="text-sm text-gray-800 leading-relaxed font-sans font-semibold">
-                {selectedResult.status}
-              </p>
-            </div>
-
-            {/* Message */}
-            <div>
-              <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Message</h4>
-              <p className="text-sm text-gray-800 leading-relaxed font-sans">
-                {selectedResult.message}
-              </p>
-            </div>
+            <DetailSection title="Citation">{selectedCitation.text}</DetailSection>
+            <DetailSection title="Case Name">{selectedCitation.caseName}</DetailSection>
+            <DetailSection title="Reporter">{formatReporter(selectedCitation)}</DetailSection>
+            <DetailSection title="Status" isBold>{selectedResult.status}</DetailSection>
+            <DetailSection title="Message">{selectedResult.message}</DetailSection>
 
             {/* Additional Details */}
             {selectedResult.details && (
               <div className="space-y-4">
                 {selectedResult.details.expectedQuote && (
-                  <div>
-                    <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Quote in Brief</h4>
-                    <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic text-gray-700 font-sans text-sm leading-relaxed">
-                      {selectedResult.details.expectedQuote}
-                    </blockquote>
-                  </div>
+                  <QuoteBlock title="Quote in Brief" quote={selectedResult.details.expectedQuote} />
                 )}
                 {selectedResult.details.actualQuote && (
-                  <div>
-                    <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Actual Quote from Source</h4>
-                    <blockquote className="border-l-4 border-gray-300 pl-4 my-2 italic text-gray-700 font-sans text-sm leading-relaxed">
-                      {selectedResult.details.actualQuote}
-                    </blockquote>
-                  </div>
+                  <QuoteBlock title="Actual Quote from Source" quote={selectedResult.details.actualQuote} />
                 )}
                 {selectedResult.details.treatmentHistory && (
-                  <div>
-                    <h4 className="text-sm font-serif font-bold text-gray-900 mb-3">Treatment History</h4>
-                    <p className="text-sm text-gray-800 leading-relaxed font-sans">
-                      {selectedResult.details.treatmentHistory}
-                    </p>
-                  </div>
+                  <DetailSection title="Treatment History">
+                    {selectedResult.details.treatmentHistory}
+                  </DetailSection>
                 )}
               </div>
             )}
           </div>
         ) : (
           <div className="bg-white rounded-lg p-6">
-            <p className="text-sm text-gray-600 font-sans leading-relaxed">Click on a citation to see details.</p>
+            <p className="text-sm text-gray-600 font-sans leading-relaxed">
+              Click on a citation to see details.
+            </p>
           </div>
         )}
       </div>

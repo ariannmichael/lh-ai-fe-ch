@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Brief, Citation, VerificationResult } from '../types';
-import { Copy, ChevronRight } from 'lucide-react';
+import { CitationTag } from './CitationTag';
+import { getCitationMetadata } from '../utils/citationMetadata';
 
 interface BriefViewerProps {
   brief: Brief;
@@ -18,59 +19,6 @@ export function BriefViewer({
     return brief.verificationResults.find((r) => r.citationId === citationId);
   };
 
-  // Determine citation metadata based on case name and context
-  const getCitationMetadata = (citation: Citation): {
-    court: string;
-    category: string;
-    strength: string;
-    color: string;
-    icon: string;
-  } => {
-    const caseName = citation.caseName.toLowerCase();
-    
-    // Determine court
-    let court = '';
-    if (caseName.includes('twombly') || caseName.includes('iqbal') || 
-        caseName.includes('tellabs') || caseName.includes('dura') ||
-        caseName.includes('basic')) {
-      court = 'SCOTUS';
-    } else if (citation.reporter.includes('F.3d') || citation.reporter.includes('F.2d')) {
-      court = '9th Cir.';
-    }
-
-    // Determine category and strength
-    let category = '';
-    let strength = '';
-    let color = 'blue';
-    let icon = 'C';
-
-    if (caseName.includes('twombly') || caseName.includes('iqbal')) {
-      category = 'Pleading Standard';
-      strength = 'Strong';
-      color = 'blue';
-    } else if (caseName.includes('tellabs')) {
-      category = 'Scienter Standard';
-      strength = 'Strong';
-      color = 'orange';
-    } else if (caseName.includes('henderson')) {
-      category = 'PSLRA';
-      strength = 'Medium';
-      color = 'purple';
-      icon = 'C';
-    } else if (caseName.includes('dura')) {
-      category = 'PSLRA';
-      strength = 'Medium';
-      color = 'purple';
-      icon = 'D';
-    } else if (caseName.includes('basic')) {
-      category = 'PSLRA';
-      strength = 'Medium';
-      color = 'purple';
-    }
-
-    return { court, category, strength, color, icon };
-  };
-
   // Process content to replace citations with a unique marker
   const processContent = (content: string): string => {
     const citationRegex = /\[\[CITATION:(\d+)\]\]/g;
@@ -84,7 +32,7 @@ export function BriefViewer({
     });
   };
 
-  // Custom component to render citation tags
+  // Render citation tag
   const renderCitationTag = (citation: Citation): React.ReactNode => {
     const result = getResultForCitation(citation.id);
     const isSelected = selectedCitationId === citation.id;
@@ -96,88 +44,15 @@ export function BriefViewer({
       }
     };
 
-    // For SCOTUS cases (Twombly, Tellabs, etc.), show full citation text with highlighted case name + separate tags
-    if (metadata.color === 'blue' || metadata.color === 'orange') {
-      // Split citation text to highlight case name
-      const citationParts = citation.text.split(citation.caseName);
-      const beforeCase = citationParts[0];
-      const afterCase = citationParts[1] || '';
-
-      return (
-        <span key={citation.id} className="inline-flex items-center gap-1.5 flex-wrap">
-          {/* Full citation text with highlighted case name */}
-          <span
-            onClick={handleClick}
-            className={`inline-flex items-center gap-0 ${isSelected ? 'ring-2 ring-gray-800 rounded px-1' : ''} cursor-pointer`}
-          >
-            {beforeCase && <span className="text-gray-700">{beforeCase}</span>}
-            <span className="bg-blue-100 text-blue-900 px-1 py-0.5 rounded font-medium">
-              {citation.caseName}
-            </span>
-            {afterCase && <span className="text-gray-700">{afterCase}</span>}
-          </span>
-          
-          {/* Separate metadata tags */}
-          {metadata.court && (
-            <span
-              onClick={handleClick}
-              className="px-2 py-0.5 rounded border border-blue-500 bg-white text-xs font-medium text-gray-700 cursor-pointer hover:bg-blue-50"
-            >
-              {metadata.court}
-            </span>
-          )}
-          
-          {metadata.category && metadata.strength && (
-            <span
-              onClick={handleClick}
-              className="px-2 py-0.5 rounded border border-gray-400 bg-white text-xs font-medium text-gray-700 cursor-pointer hover:bg-gray-50"
-            >
-              {metadata.category} {metadata.strength}
-            </span>
-          )}
-        </span>
-      );
-    }
-
-    // For other cases (purple tags with icons) - show as inline tag
     return (
-      <span
+      <CitationTag
         key={citation.id}
+        citation={citation}
+        result={result}
+        metadata={metadata}
+        isSelected={isSelected}
         onClick={handleClick}
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded border border-purple-500 bg-purple-50 ${isSelected ? 'ring-2 ring-gray-800' : ''} cursor-pointer hover:bg-purple-100 transition-all`}
-        style={{ fontSize: '0.75rem', lineHeight: '1.2' }}
-      >
-        {/* Icon */}
-        <span className="font-bold text-xs">{metadata.icon}</span>
-        
-        {/* Case name */}
-        <span className="font-medium">{citation.caseName}</span>
-        
-        {/* Metadata */}
-        {metadata.court && (
-          <>
-            <span className="text-gray-400">|</span>
-            <span>{metadata.court}</span>
-          </>
-        )}
-        
-        {metadata.category && (
-          <>
-            <span className="text-gray-400">|</span>
-            <span>{metadata.category}</span>
-          </>
-        )}
-        
-        {metadata.strength && (
-          <>
-            <span className="text-gray-400">|</span>
-            <span>{metadata.strength}</span>
-          </>
-        )}
-
-        <Copy className="w-3 h-3 text-gray-500 ml-1" />
-        <ChevronRight className="w-3 h-3 text-gray-500" />
-      </span>
+      />
     );
   };
 
@@ -187,7 +62,6 @@ export function BriefViewer({
     const citationMarkerRegex = /\{\{CITE:([^}]+)\}\}/g;
     let lastIndex = 0;
     let match;
-    let keyCounter = 0;
 
     while ((match = citationMarkerRegex.exec(text)) !== null) {
       // Add text before the citation
@@ -221,9 +95,7 @@ export function BriefViewer({
 
     if (React.isValidElement(node)) {
       if (node.props.children) {
-        const processedChildren = React.Children.map(node.props.children, (child) =>
-          processNode(child)
-        );
+        const processedChildren = React.Children.map(node.props.children, processNode);
         return React.cloneElement(node, { ...node.props, children: processedChildren });
       }
       return node;
