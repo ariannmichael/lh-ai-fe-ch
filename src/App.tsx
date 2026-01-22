@@ -15,15 +15,15 @@ function App() {
     setIsDetailPanelOpen(true);
   };
 
-  const handleDetailPanelClose = () => {
+  const handleClosePanel = () => {
     setIsDetailPanelOpen(false);
     setSelectedCitation(null);
     setSelectedResult(null);
   };
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-      <div style={{ flex: 1 }}>
+    <div className="flex w-full h-screen bg-gray-100">
+      <div className="flex-1 bg-white overflow-y-auto p-8">
         <BriefViewer
           brief={sampleBrief}
           onCitationClick={handleCitationClick}
@@ -31,8 +31,12 @@ function App() {
         />
       </div>
       {isDetailPanelOpen && (
-        <div style={{ width: '400px', borderLeft: '1px solid black', padding: '10px' }}>
-          <DetailPanel citation={selectedCitation} result={selectedResult} onClose={handleDetailPanelClose} />
+        <div className="w-96 bg-gray-50 border-l border-gray-200">
+          <DetailPanel 
+            selectedCitation={selectedCitation} 
+            selectedResult={selectedResult}
+            onClose={handleClosePanel}
+          />
         </div>
       )}
     </div>
